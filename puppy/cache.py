@@ -36,7 +36,7 @@ class PuppyCache(RedisCache):
                 client.expire(state_key, update_time)
                 log.debug("[%s] Invoking callback", key)
                 value = callback(key)
-                self.pset(key, value, timeout=None, update_time=update_time)
+                self.pset(key, value, timeout=timeout, update_time=update_time)
             # Someone else is already updating it
             elif value is None:
                 # We must wait as there is no "stale" value to return
