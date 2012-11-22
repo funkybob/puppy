@@ -29,27 +29,40 @@ class PuppyCache(RedisCache):
         status = self.get(state_key)
 
         # If the status has expired, or we have no value
-        if not status or not value:
+        while not status or not value:
             log.debug("[%s] No status", key)
             # Try to gain an updating lock
             if client.setnx(state_key, self.pickle(UPDATING)):
                 client.expire(state_key, update_time)
                 log.debug("[%s] Invoking callback", key)
                 value = callback(key)
-                self.pset(key, value, timeout=timeout, update_time=update_time)
+
+                # Resolve our timeout value
+                if timeout is None:
+                    timeout = self.default_timeout
+                toast_timeout = timeout + (update_time * 2)
+
+                log.debug("[%s] Setting value [%d]", key, toast_timeout)
+                self.set(key, value, timeout=toast_timeout)
+                log.debug("[%s] Status: current", state_key)
+                status = CURRENT
+                self.set(state_key, self.pickle(status), timeout=timeout)
             # Someone else is already updating it
-            elif value is None:
+            elif not value:
                 # We must wait as there is no "stale" value to return
                 while True:
                     status = self.get(state_key)
                     if status != UPDATING:
                         break
                     sleep(1)
-                log.debug('[%s] Returning fresh value', key)
-                value = self.get(key)
+                # If the status expired, the updating task raised an exception
+                if status:
+                    log.debug('[%s] Returning fresh value', key)
+                    value = self.get(key)
             # Fall through to returning the stale value
+        else:
+            log.debug("[%s] Returning cached value", key)
 
-        log.debug("[%s] Returning cached value", key)
         return value
 
     def pset(self, key, value, timeout=None, update_time=30):
