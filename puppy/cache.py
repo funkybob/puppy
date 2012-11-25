@@ -35,7 +35,12 @@ class PuppyCache(RedisCache):
             if client.setnx(state_key, self.pickle(UPDATING)):
                 client.expire(state_key, update_time)
                 log.debug("[%s] Invoking callback", key)
-                value = callback(key)
+                try:
+                    value = callback(key)
+                except:
+                    log.warning("Callback raised exception")
+                    client.delete(state_key)
+                    raise
 
                 # Resolve our timeout value
                 if timeout is None:
