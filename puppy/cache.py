@@ -29,7 +29,7 @@ class PuppyCache(RedisCache):
         status = self.get(state_key)
 
         # If the status has expired, or we have no value
-        while not status or not value:
+        while not status or value is None:
             log.debug("[%s] No status", key)
             # Try to gain an updating lock
             if client.setnx(state_key, self.pickle(UPDATING)):
