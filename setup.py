@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 
 setup(
     name='puppy',
@@ -12,6 +12,9 @@ setup(
     keywords=['django', 'redis', 'cache'],
     packages = find_packages(),
     zip_safe=False,
+    requires = [
+        'django-redis(>=3.1)',
+    ],
     classifiers = [
         'Environment :: Web Environment',
         'Framework :: Django',

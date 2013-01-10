@@ -19,7 +19,7 @@ class PuppyCache(RedisCache):
         return self.make_key('puppy:' + key)
 
     def pget(self, key, callback, timeout=None, update_time=30):
-        client = self._client
+        redis = self.raw_client
 
         # Status key
         state_key = self.make_state_key(key)
@@ -32,14 +32,15 @@ class PuppyCache(RedisCache):
         while not status or value is None:
             log.debug("[%s] No status", key)
             # Try to gain an updating lock
-            if client.setnx(state_key, self.pickle(UPDATING)):
-                client.expire(state_key, update_time)
+            # We need to pickle it ourselves here, as we bypass cache layers
+            if redis.setnx(state_key, self.client.pickle(UPDATING)):
+                redis.expire(state_key, update_time)
                 log.debug("[%s] Invoking callback", key)
                 try:
                     value = callback(key)
                 except:
-                    log.warning("Callback raised exception")
-                    client.delete(state_key)
+                    log.warning("[%s] Callback raised exception", key)
+                    redis.delete(state_key)
                     raise
 
                 # Resolve our timeout value
@@ -51,7 +52,7 @@ class PuppyCache(RedisCache):
                 self.set(key, value, timeout=toast_timeout)
                 log.debug("[%s] Status: current", state_key)
                 status = CURRENT
-                self.set(state_key, self.pickle(status), timeout=timeout)
+                self.set(state_key, status, timeout=timeout)
             # Someone else is already updating it
             elif not value:
                 # We must wait as there is no "stale" value to return
@@ -82,6 +83,6 @@ class PuppyCache(RedisCache):
         log.debug("[%s] Setting value [%d]", key, toast_timeout)
         self.set(key, value, timeout=toast_timeout)
         log.debug("[%s] Status: current", state_key)
-        self.set(state_key, self.pickle(CURRENT), timeout=timeout)
+        self.set(state_key, CURRENT, timeout=timeout)
 
         return value
