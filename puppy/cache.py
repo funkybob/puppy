@@ -20,13 +20,16 @@ class PuppyCache(RedisCache):
 
     def pget(self, key, callback, timeout=None, update_time=30):
         redis = self.raw_client
+        pipe = redis.pipeline()
 
         # Status key
-        state_key = self.make_state_key(key)
+        key = self.make_key(key)
+        state_key = 'puppy:' + key
 
         # Get the value and its status
-        value = self.get(key)
-        status = self.get(state_key)
+        value, status = pipe.get(key).get(state_key).execute()
+        if value is not None:
+            value = self.client.unpickle(value)
 
         # If the status has expired, or we have no value
         while not status or value is None:
@@ -49,22 +52,23 @@ class PuppyCache(RedisCache):
                 toast_timeout = timeout + (update_time * 2)
 
                 log.debug("[%s] Setting value [%d]", key, toast_timeout)
-                self.set(key, value, timeout=toast_timeout)
                 log.debug("[%s] Status: current", state_key)
+                pipe.setex(key, self.client.pickle(value), int(toast_timeout))
                 status = CURRENT
-                self.set(state_key, status, timeout=timeout)
+                pipe.setex(state_key, status, int(timeout))
+                pipe.execute()
             # Someone else is already updating it
             elif not value:
                 # We must wait as there is no "stale" value to return
                 while True:
-                    status = self.get(state_key)
+                    status, value = pipe.get(state_key).get(key).execute()
                     if status != UPDATING:
                         break
                     sleep(1)
                 # If the status expired, the updating task raised an exception
                 if status:
                     log.debug('[%s] Returning fresh value', key)
-                    value = self.get(key)
+                    value = self.client.unpickle(value)
             # Fall through to returning the stale value
         else:
             log.debug("[%s] Returning cached value", key)
