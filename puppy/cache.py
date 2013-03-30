@@ -15,9 +15,6 @@ UPDATING = 'updating'
 
 class PuppyCache(RedisCache):
 
-    def make_state_key(self, key):
-        return self.make_key('puppy:' + key)
-
     def pget(self, key, callback, timeout=None, update_time=30):
         redis = self.raw_client
         pipe = redis.pipeline()
@@ -72,21 +69,5 @@ class PuppyCache(RedisCache):
             # Fall through to returning the stale value
         else:
             log.debug("[%s] Returning cached value", key)
-
-        return value
-
-    def pset(self, key, value, timeout=None, update_time=30):
-        '''Set this key, and mark its puppy key current'''
-        state_key = self.make_state_key(key)
-
-        # Calculate too-stale-for-toast timeout
-        if timeout is None:
-            timeout = self.default_timeout
-        toast_timeout = timeout + (update_time * 2)
-
-        log.debug("[%s] Setting value [%d]", key, toast_timeout)
-        self.set(key, value, timeout=toast_timeout)
-        log.debug("[%s] Status: current", state_key)
-        self.set(state_key, CURRENT, timeout=timeout)
 
         return value
