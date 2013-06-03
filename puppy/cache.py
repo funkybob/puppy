@@ -24,22 +24,18 @@ class PuppyCache(RedisCache):
         state_key = 'puppy:' + key
 
         # Get the value and its status
-        value, status = pipe.get(key).get(state_key).execute()
+        value, status = redis.mget(key, state_key)
         if value is not None:
             value = self.client.unpickle(value)
 
         # If the status has expired, or we have no value
         while not status or value is None:
-            log.debug("[%s] No status", key)
             # Try to gain an updating lock
-            # We need to pickle it ourselves here, as we bypass cache layers
-            if redis.setnx(state_key, self.client.pickle(UPDATING)):
+            if redis.setnx(state_key, UPDATING):
                 redis.expire(state_key, update_time)
-                log.debug("[%s] Invoking callback", key)
                 try:
                     value = callback(key)
                 except:
-                    log.warning("[%s] Callback raised exception", key)
                     redis.delete(state_key)
                     raise
 
@@ -48,26 +44,19 @@ class PuppyCache(RedisCache):
                     timeout = self.default_timeout
                 toast_timeout = timeout + (update_time * 2)
 
-                log.debug("[%s] Setting value [%d]", key, toast_timeout)
-                log.debug("[%s] Status: current", state_key)
-                pipe.setex(key, self.client.pickle(value), int(toast_timeout))
                 status = CURRENT
-                pipe.setex(state_key, status, int(timeout))
+                pipe.setex(key, self.client.pickle(value), int(toast_timeout)).setex(state_key, status, int(timeout))
                 pipe.execute()
             # Someone else is already updating it
             elif not value:
                 # We must wait as there is no "stale" value to return
-                while True:
-                    status, value = pipe.get(state_key).get(key).execute()
-                    if status != UPDATING:
-                        break
-                    sleep(1)
+                while status != UPDATING:
+                    sleep(0.1)
+                    status, value = redis.mget(state_key, key)
                 # If the status expired, the updating task raised an exception
                 if status:
-                    log.debug('[%s] Returning fresh value', key)
-                    value = self.client.unpickle(value)
+                    if value is not None:
+                        value = self.client.unpickle(value)
             # Fall through to returning the stale value
-        else:
-            log.debug("[%s] Returning cached value", key)
 
         return value
