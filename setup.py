@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 VERSION = '1.2.0'
 
 setup(
-    name='puppy',
+    name='django-puppy-cache',
     version=VERSION,
     description='Django cache backend that helps prevent dog-piling.',
     author='Curtis Maloney',
