@@ -1,1 +1,1 @@
-django-redis==2.2
+django-redis==3.1

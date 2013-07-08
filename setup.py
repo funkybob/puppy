@@ -13,7 +13,7 @@ setup(
     packages = find_packages(),
     zip_safe=False,
     requires = [
-        'django-redis(>=3.1)',
+        'django_redis (>=3.1)',
     ],
     classifiers = [
         'Environment :: Web Environment',
