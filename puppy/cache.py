@@ -53,8 +53,7 @@ class PuppyCache(RedisCache):
                     key, value, int(toast_timeout)
                 ).setex(
                     state_key, status, int(timeout)
-                )
-                pipe.execute()
+                ).execute()
             # Someone else is already updating it, but we don't have a value
             # to return, so we must wait
             elif not value:
