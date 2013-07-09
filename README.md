@@ -30,7 +30,7 @@ It currently requires Redis 2.6.12 or greater, as it uses the new combined SET c
 Usage
 =====
 
-In all ways, it acts exactly as RedisCache, but provides two new methods:
+In all ways, it acts exactly as RedisCache, but provides a new method:
 
     cache.pget(key, callback, update_time=30):
 
@@ -39,10 +39,6 @@ Call this to retrieve a dogpile proof value.
 If the value has expired, the callback is invoked and expected to set the new value, as well as return it.
 
 When the status is locked for update, a shorter expirey time is used in case the task fails.  This time is the `update_time`.
-
-    cache.pset(key, value, timeout=None, update_time=30):
-
-This works like set, but also updates the status key to indicate it's current.  It also updates the status expirey time.
 
 The key's timeout will be set to (timeout + 2 * update_time)
 
