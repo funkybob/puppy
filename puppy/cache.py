@@ -62,7 +62,7 @@ class PuppyCache(RedisCache):
                 # We must wait as there is no "stale" value to return
                 while status == UPDATING:
                     sleep(SLEEP)
-                    status, value = redis.mget(state_key, key)
+                    value, status = redis.mget(key, state_key)
             else:
                 # We get here if no status, failed to lock, but we have a value
                 # so it's safe to fall through and return the value
