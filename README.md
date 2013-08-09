@@ -25,7 +25,7 @@ Install as a cache backend as you would any other:
 
     'BACKEND': 'puppy.cache.PuppyCache',
 
-It currently requires Redis 2.6.12 or greater, as it uses the new combined SET command to affect SETNX and SETEX in one step.
+It currently requires Redis 2.6.12 or greater, as it uses the new combined SET command to affect SETNX and SETEX in one step.  This also requires py-redis 2.7.4 or greater.
 
 Usage
 =====
