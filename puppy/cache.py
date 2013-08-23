@@ -21,7 +21,7 @@ class PuppyCache(RedisCache):
 
     def pget(self, key, callback, timeout=None, update_time=30):
         redis = self.raw_client
-        pipe = redis.pipeline()
+        pipe = redis.pipeline(transaction=False)
 
         # Status key
         key = self.make_key(key)
