@@ -33,8 +33,7 @@ class PuppyCache(RedisCache):
         # If the status has expired, or we have no value
         while not status or value is None:
             # Try to gain an updating lock
-            if redis.execute_command('SET', state_key, UPDATING, 'EX',
-                                     update_time, 'NX'):
+            if redis.setex(state_key, UPDATING, ex=update_time, nx=True):
                 try:
                     value = callback(key)
                 except:
