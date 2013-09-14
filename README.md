@@ -35,9 +35,16 @@ is twice the update time longer than the status key's.
 Install
 =======
 
-Install as a cache backend as you would any other:
+Install as a cache backend as you would any other.  It can work with either
+the PyLibMC backend in Django, or "django-redis".
 
-    'BACKEND': 'puppy.cache.PuppyCache',
+For Redis, use:
+
+    'BACKEND': 'puppy.redis.PuppyCache',
+
+For memcached, use:
+
+    'BACKEND': 'puppy.memcached.PuppyCache',
 
 Puppy currently requires Redis 2.6.12 or greater, as it uses the new combined
 SET command to affect SETNX and SETEX in one step.  This also requires
