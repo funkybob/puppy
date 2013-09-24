@@ -1,7 +1,7 @@
 puppy
 =====
 
-Puppy Cache - for preventing Dogpiles
+Puppy Cache - making dogpiles be not scary
 
 How it works
 ============
