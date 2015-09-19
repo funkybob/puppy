@@ -3,7 +3,7 @@
 Puppy Cache
 
 '''
-from redis_cache.cache import RedisCache
+from django_redis.cache import RedisCache
 
 from django.conf import settings
 
@@ -20,7 +20,7 @@ SLEEP = getattr(settings, 'PUPPY_SLEEP', 0.1)
 class PuppyCache(RedisCache):
 
     def pget(self, key, callback, timeout=None, update_time=30):
-        redis = self.raw_client
+        redis = self.client.get_client()
         pipe = redis.pipeline(transaction=False)
 
         # Status key
@@ -47,11 +47,11 @@ class PuppyCache(RedisCache):
 
                 status = CURRENT
                 # Even if the value is None, pickled None is not None
-                value = self.client.pickle(value)
+                value = self.client.encode(value)
                 pipe.setex(
-                    key, value, int(toast_timeout)
+                    key, int(toast_timeout), value
                 ).setex(
-                    state_key, status, int(timeout)
+                    state_key, int(timeout), status
                 ).execute()
             # Someone else is already updating it, but we don't have a value
             # to return, so we must wait
@@ -68,6 +68,6 @@ class PuppyCache(RedisCache):
                 break
 
         if value is not None:
-            value = self.client.unpickle(value)
+            value = self.client.decode(value)
 
         return value
